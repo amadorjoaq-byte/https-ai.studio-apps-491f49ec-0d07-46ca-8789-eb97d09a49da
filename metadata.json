@@ -1,0 +1,5 @@
+{
+  "name": "Pizarra de Poder",
+  "description": "Gestión de alumnos con sistema de corazones en tiempo real para pizarras digitales y móviles. Incluye autenticación y guardado seguro.",
+  "requestFramePermissions": []
+}

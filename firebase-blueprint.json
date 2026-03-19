@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "Class": {
+      "title": "Class",
+      "description": "A group of students.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the class.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the class was created."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this class."
+        }
+      },
+      "required": ["name", "createdAt", "ownerId"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "An individual student in a class.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The student's name.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "color": {
+          "type": "string",
+          "description": "The color class associated with the student.",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "hearts": {
+          "type": "integer",
+          "description": "Number of hearts remaining (0-5).",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "classId": {
+          "type": "string",
+          "description": "The ID of the class the student belongs to."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the student was added."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this student record."
+        }
+      },
+      "required": ["name", "color", "hearts", "classId", "createdAt", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Collection of school classes."
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Collection of students across all classes."
+    }
+  }
+}

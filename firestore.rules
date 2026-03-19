@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /classes/{classId}
+    // Fields:
+    //   - name: string (1-100 chars)
+    //   - createdAt: timestamp
+    //   - ownerId: string (UID)
+    //
+    // Collection: /students/{studentId}
+    // Fields:
+    //   - name: string (1-100 chars)
+    //   - color: string (1-50 chars)
+    //   - hearts: int (0-5)
+    //   - classId: string
+    //   - createdAt: timestamp
+    //   - ownerId: string (UID)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "amadorjoaq@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidClass(data) {
+      return hasRequiredFields(['name', 'createdAt', 'ownerId']) &&
+             hasOnlyAllowedFields(['name', 'createdAt', 'ownerId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.createdAt is timestamp &&
+             data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidStudent(data) {
+      return hasRequiredFields(['name', 'color', 'hearts', 'classId', 'createdAt', 'ownerId']) &&
+             hasOnlyAllowedFields(['name', 'color', 'hearts', 'classId', 'createdAt', 'ownerId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.color is string && data.color.size() > 0 && data.color.size() <= 50 &&
+             data.hearts is int && data.hearts >= 0 && data.hearts <= 5 &&
+             data.classId is string &&
+             data.createdAt is timestamp &&
+             data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      // Only admins can create/update roles, but users can create their own profile with 'user' role
+      allow create: if isAuthenticated() && isOwner(userId) && 
+                      request.resource.data.role == 'user';
+      allow update: if isAuthenticated() && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role));
+    }
+
+    match /classes/{classId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidClass(request.resource.data);
+      allow update: if isDocOwner() && isValidClass(request.resource.data) && 
+                       request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidStudent(request.resource.data);
+      allow update: if isDocOwner() && isValidStudent(request.resource.data) && 
+                       request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /test/connection {
+      allow read: if isAuthenticated();
+    }
+  }
+}
